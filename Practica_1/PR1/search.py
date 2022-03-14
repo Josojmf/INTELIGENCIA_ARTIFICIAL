@@ -134,57 +134,21 @@ def breadthFirstSearch(problem):
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    stripe= util.PriorityQueue()#Franja que implementa una cola con prioridad 
-    trace = {}
-    visited = []#Array con los estados ya visitados
-    actual = problem.getStartState()#Definimos el nodo inicial raiz
-    prev_cost = 0
-    trace[actual] = [None, None, prev_cost]
+    fringe = util.PriorityQueue()
+    fringe.push( (problem.getStartState(), [], 0), 0 )
+    expanded = []
 
-    stripe.update(actual, #Como es el primer nodo la prioridad es la mas baja
-    visited.append(actual)#Marcamos como visitado el nodo raiz
+    while not fringe.isEmpty():
+        node, actions, curCost = fringe.pop()
 
-    while not stripe.isEmpty():
-        
-        curr_state = stripe.pop()
+        if(not node in expanded):
+            expanded.append(node)
 
-        if problem.isGoalState(curr_state):
-            break
+            if problem.isGoalState(node):
+                return actions
 
-        succ = problem.getSuccessors(curr_state)
-        
-        for successor in succ:
-
-            next_state = successor[0]
-            next_action = successor[1]
-            next_cost = successor[2]
-
-            # avoid traveling back to previous states
-            if next_state not in visited:
-                prev_cost = trace[curr_state][2]
-                visited.append(next_state)
-                stripe.update(next_state, next_cost + prev_cost)
-                
-            # update and allow tracing to the best state
-            if next_state in trace:
-                if trace[next_state][2] > next_cost + prev_cost:
-                    trace[next_state][2] = next_cost + prev_cost
-                    trace[next_state][1] = next_action
-                    trace[next_state][0] = curr_state
-            else:
-                trace[next_state] = [curr_state, next_action, next_cost + prev_cost]
-
-    # back track
-    actions = []
-    backtrack_state = curr_state # the goal state
-
-    while backtrack_state != actual:
-        prev_state, action, _ = trace[backtrack_state] 
-        actions.append(action)
-        backtrack_state = prev_state
-
-    actions = list(reversed(actions))
-    return actions
+            for child, direction, cost in problem.getSuccessors(node):
+                fringe.push((child, actions+[direction], curCost + cost), curCost + cost)
     util.raiseNotDefined()
 
 def nullHeuristic(state, problem=None):
@@ -196,7 +160,24 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
+    
     "*** YOUR CODE HERE ***"
+    fringe = util.PriorityQueue()
+    fringe.push( (problem.getStartState(), [], 0), heuristic(problem.getStartState(), problem) )
+    expanded = []
+
+    while not fringe.isEmpty():
+        node, actions, curCost = fringe.pop()
+
+        if(not node in expanded):
+            expanded.append(node)
+
+            if problem.isGoalState(node):
+                return actions
+
+            for child, direction, cost in problem.getSuccessors(node):
+                g = curCost + cost
+                fringe.push((child, actions+[direction], curCost + cost), g + heuristic(child, problem))
     util.raiseNotDefined()
 
 
