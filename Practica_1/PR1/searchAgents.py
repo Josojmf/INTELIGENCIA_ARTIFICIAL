@@ -296,7 +296,6 @@ class CornersProblem(search.SearchProblem):
         """
         "*** YOUR CODE HERE ***"
         return (self.startingPosition, [])
-        util.raiseNotDefined()
 
     def isGoalState(self, state):
         """
@@ -384,26 +383,22 @@ def cornersHeuristic(state, problem):
     """
     corners = problem.corners # These are the corner coordinates
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
-
     "*** YOUR CODE HERE ***"
-    node = state[0]
-    visitedCorners = state[1]
-
-    unvisitedCorners = []
-    sum = 0
-    for corner in corners:
-        if not corner in visitedCorners:
-            unvisitedCorners.append(corner)
-
-    currentPoint = node
-    while len(unvisitedCorners) > 0:
-        distance, corner = min([(util.manhattanDistance(currentPoint, corner), corner) for corner in unvisitedCorners])
-        sum += distance
-        currentPoint = corner
-        unvisitedCorners.remove(corner)
-
-    return sum
-    return 0 # Default to trivial solution
+    node = state[0] #Nodo actual
+    visitedCorners = state[1] 
+    unvisitedCorners = [] #Array con los nodos que aun no he visitado
+    sum = 0 # Coste en distancia  acumulado hasta llegar a una esquina
+    for corner in corners: # Para cada esquina
+        if not corner in visitedCorners: # Si no he visitado esa esquina
+            unvisitedCorners.append(corner) #La meto en el array de nos visitados
+    currentPoint = node #Mi nodo actual es el primer nodo de mi estructura de datos
+    while len(unvisitedCorners) > 0: # Mientras que haya alguna esquina que no he visitado
+        distance, corner = min([(util.manhattanDistance(currentPoint, corner), corner) for corner in unvisitedCorners]) #Me quedo con la esquina y la distancia que sea minima para 
+                                                                                                                         #todas las esquinas que no he visitado
+        sum += distance #Actualizo la distancia total recorrida con la distancia a la esquina mas cercana
+        currentPoint = corner #Me voy a mover hasta la esquina mas cercana
+        unvisitedCorners.remove(corner) # Como me he movido a la esquina mas cercana la saco de las no visitadas
+    return sum # La heurisitca a devolver es la distancia total a la esquina mas cercana
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -496,47 +491,8 @@ def foodHeuristic(state, problem):
     problem.heuristicInfo['wallCount']
     """
     position, foodGrid = state
-    "*** YOUR CODE HERE ***"  
-    if(problem.isGoalState(state)):
-        return 0
-    verticesINMST = set()
-    verticesNOTMST = set()
-    
-    for i, item in enumerate(foodGrid):
-        for j, foodItem in enumerate(item):
-            if(foodItem):
-                verticesNOTMST.add((i,j))
-    closest_dist = min([util.manhattanDistance(position, item) for item in verticesNOTMST])
-    
-    # verticesNOTMST.add(position)
-    edges = util.PriorityQueue()
-    
-    cost = 0
-    # edges.push((verticesNOTMST[i], verticesNOTMST[j]), util.manhattanDistance(verticesNOTMST[i], verticesNOTMST[j]))
-    poppedEdge = None
-    inV, outV = 0,0
-    spanCost = closest_dist
-    spanEdges = []
-    
-    currentVert = verticesNOTMST.pop()
-    verticesINMST.add(currentVert)
-    
-    while len(verticesNOTMST) != 0:
-        for vert in verticesNOTMST:
-            cost = util.manhattanDistance(currentVert, vert)
-            edges.push(((currentVert, vert), cost), cost)
-        while(True):
-            poppedEdge, cost = edges.pop()
-            if(poppedEdge[1] in verticesNOTMST):
-                inV, outV = poppedEdge
-                break
-        spanCost += cost
-        verticesNOTMST.remove(outV)
-        verticesINMST.add(outV)
-        spanEdges.append((poppedEdge, cost))
-        currentVert = outV
-    # print "pos:", position, " h:", spanCost    
-    return spanCost
+    "*** YOUR CODE HERE ***"    
+    return 0
 
 
 class ClosestDotSearchAgent(SearchAgent):
@@ -568,9 +524,9 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
-        actions = search.bfs(problem)
-        return actions
-        util.raiseNotDefined()
+        actions = search.ucs(problem) #Busco el punto mas cercano con el algoritmos a estrella
+        return actions# Devuelvo las acciones encontradas para cada punto encontradas arriba
+
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -606,10 +562,11 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         x,y = state
 
         "*** YOUR CODE HERE ***"
-        foodList = self.food.asList()
-        distance, food = min([(util.manhattanDistance(state, food), food) for food in foodList])
-        isGoal = state == food
+        foodList = self.food.asList() #Declaro todos los puntos de comida que hay
+        distance, food = min([(util.manhattanDistance(state, food), food) for food in foodList])#La distancia y el punto de comida a buscar es el que tenga menor distancia segun la heuristica de manhhatan
+        isGoal = state == food #Le deciomos que el objetivo es el estado actual si este tiene un punto de comida
         return isGoal
+
 
 def mazeDistance(point1, point2, gameState):
     """

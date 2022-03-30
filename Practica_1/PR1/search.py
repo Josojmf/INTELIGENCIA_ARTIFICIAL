@@ -102,7 +102,6 @@ def depthFirstSearch(problem):
         for succ in problem.getSuccessors(actual):#Desplegamos el nodo anterior y miramos sus sucesores
             if succ[0] not in visited:#Comprobamos que el nodo mas a la izquierda no este visitado  
                 stripe.push((succ[0], path + [succ[1]]))#Si no está visitado lo añadimos a la franja de trabajo e incluimos el siguiente en el camino
-    util.raiseNotDefined()
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
@@ -127,29 +126,29 @@ def breadthFirstSearch(problem):
                 if not succ in visited:#Para sucesor no visitado(En este caso miramos todos los sucesores y nos solo el de mas a alq izquierda)
                     visited.append(succ)#Marcamos cada sucesor como visitado
                     stripe.push((succ, path + [direction]))#Lo incluimos en la franja junto al camino previo y la direccion que hemos tomado
-                
-    return []
-    util.raiseNotDefined()
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    fringe = util.PriorityQueue()
-    fringe.push( (problem.getStartState(), [], 0), 0 )
-    expanded = []
+    stripe = util.PriorityQueue() #DEfinimos una cola con prioridad como nuestra estructura de datos
+    stripe.push((problem.getStartState(),[],0),0) #Introducimos en la cola el nodo inicial, las direcciones a seguir y el coste
+                                                  #inicial como primer argumento, y la prioridad 0 como segundo
+    visited = [] #Declaramos un array que contendrá los nodos visitados
 
-    while not fringe.isEmpty():
-        node, actions, curCost = fringe.pop()
+    while not stripe.isEmpty(): # Mientras que la franja de trabajo no esté vacia 
+        node, actions, accCost = stripe.pop() # Asignaremos el primer elemento de la fila a las variables node actions y coste 
 
-        if(not node in expanded):
-            expanded.append(node)
+        if(not node in visited): #Si el primer nodo de la cola no esta visitadp
+            visited.append(node) #Lo marcamos como visitado
 
-            if problem.isGoalState(node):
-                return actions
+            if problem.isGoalState(node): #Comprobamos si hemos encontrado el nodo destino
+                return actions # Si es asi devolvemos las acciones que hemos tomado hasta encontrar ese nodo
 
-            for child, direction, cost in problem.getSuccessors(node):
-                fringe.push((child, actions+[direction], curCost + cost), curCost + cost)
-    util.raiseNotDefined()
+            for child, direction, cost in problem.getSuccessors(node): #Si no es el destino expandimos el nodo y sus sucesores
+                stripe.push((child, actions+[direction],accCost + cost),accCost + cost) #Metemos en la franja de trabajo cada sucesor, las acciones
+                                                                                          #previas y la nueva que hay que tomar,el coste acumulado, 
+                                                                                          #y por ultimo le indicamos la prioridad con el coste acumulado,
+                                                                                          # asi siempre tomara el camino con menos coste
 
 def nullHeuristic(state, problem=None):
     """
@@ -162,25 +161,23 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     
     "*** YOUR CODE HERE ***"
-    fringe = util.PriorityQueue()
-    fringe.push( (problem.getStartState(), [], 0), heuristic(problem.getStartState(), problem) )
-    expanded = []
+    stripe = util.PriorityQueue() #Definimos una cola con prioridad como estructura de datos
+    stripe.push((problem.getStartState(),[],0),heuristic(problem.getStartState(), problem)) #Metemos el nodo raiz con el conjunto vacio de acciones tomadas y 
+                                                                                            #coste 0 por ser el primero en la cola
+    visited = [] #Declaramos un array vacio que sera el conjunto de nodos visitados
+    while not stripe.isEmpty(): #Mientras que la franja de trabajo no este vacia
+        node, actions, accCost = stripe.pop() #Sacamos el nodo actual,las acciones tomadas hasta el momento y el coste accumulado total
 
-    while not fringe.isEmpty():
-        node, actions, curCost = fringe.pop()
+        if(not node in visited): #Si no esta visitado ya el nodo
+            visited.append(node) #LO marcamos como visitado
 
-        if(not node in expanded):
-            expanded.append(node)
+            if problem.isGoalState(node): #Si es el nodo destino
+                return actions #Devolvemos las acciones tomadas hasta ese punto
 
-            if problem.isGoalState(node):
-                return actions
-
-            for child, direction, cost in problem.getSuccessors(node):
-                g = curCost + cost
-                fringe.push((child, actions+[direction], curCost + cost), g + heuristic(child, problem))
-    util.raiseNotDefined()
-
-
+            for child, direction, cost in problem.getSuccessors(node): #Expandimos el nodo actual y sus sucesores
+                g = accCost + cost #Calculamos el coste real hasta ese punto
+                stripe.push((child, actions+[direction], accCost + cost), g + heuristic(child, problem)) #Metemos lo mismo que en el caso del ucs pero sumandole la 
+                                                                                                         #heurisitca para ver que camino es mejor
 # Abbreviations
 bfs = breadthFirstSearch
 dfs = depthFirstSearch
