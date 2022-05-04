@@ -58,10 +58,24 @@ class ValueIterationAgent(ValueEstimationAgent):
         self.iterations = iterations
         self.values = util.Counter() # A Counter is a dict with default 0
         self.runValueIteration()
+         
 
     def runValueIteration(self):
         # Write value iteration code here
         "*** YOUR CODE HERE ***"
+        iterations=0 #Ponemos las iteraciones a 0
+        while iterations < self.iterations:
+            valsPi = util.Counter()#Contador para saber los valores en funcion de la iteracion
+            states=self.mdp.getStates()#Todos los estados posibles
+            for state in states:#Recorremos todos los estados
+                if not self.mdp.isTerminal(state):#Si el estado no es terminal 
+                    valuesTer = util.Counter()#Inicializamos otro contador
+                    actions = self.mdp.getPossibleActions(state)#Sacamos las posibles acciones
+                    for action in actions:#Recorremos todas las acciones
+                        valuesTer[action] = self.computeQValueFromValues(state, action)#Calculamos el q valor de cada accion
+                    valsPi[state] = max(valuesTer.values())#Guardamos el valor maximo de cada estado
+            iterations += 1#Aumentamos las iteraciones
+            self.values = valsPi.copy() #Copiamos los valores para la siguiente iteracion
 
 
     def getValue(self, state):
@@ -77,7 +91,12 @@ class ValueIterationAgent(ValueEstimationAgent):
           value function stored in self.values.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        statesAndProbs=self.mdp.getTransitionStatesAndProbs(state,action)#Sacamos tuplas con el estado y la probabilidad de transicion
+        currVal=0#Inicializamos el valor a 0
+        for pair in statesAndProbs:#Recorremos los pares de estado y probabilidad
+            currVal+=pair[1]*(self.mdp.getReward(state,action,pair[0])+self.discount*self.values[pair[0]])#Calculamos el qValor con la formula
+        return currVal
+
 
     def computeActionFromValues(self, state):
         """
@@ -89,7 +108,15 @@ class ValueIterationAgent(ValueEstimationAgent):
           terminal state, you should return None.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        if self.mdp.isTerminal(state):#Si no hay acciones a seguir porque es estado terminal devolvemos none
+            return None
+        actions=self.mdp.getPossibleActions(state)#Extraemos las acciones posibles
+        if len(actions) == 0:#Si no hay acciones por lo que sea tambien devolvemos none
+            return None
+        values = util.Counter()#Contador con los valores que vamos a tener
+        for action in actions:#Parca cada accion que tengamos
+            values[action] = self.computeQValueFromValues(state, action)#Calculamos su q valor
+        return values.argMax()#Devolvemos la accion que hace que el valor sea maximo
 
     def getPolicy(self, state):
         return self.computeActionFromValues(state)
@@ -150,4 +177,56 @@ class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
 
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
+        fringe = util.PriorityQueue()
+        states = self.mdp.getStates()#Obtener todos los estados
+        predecessors = {} # Crear un nuevo diccionario vacío para los predecesores
+        for tState in states:#Recorremos todos los estados
+            previous = set()# Inicializar el conjunto, sin elementos duplicados en el conjunto
+            for state in states:
+                actions = self.mdp.getPossibleActions(state)#Sacamos las acciones posibles para cada estado
+                for action in actions:#Recorremos todas las acciones
+                    transitions = self.mdp.getTransitionStatesAndProbs(state, action)#Tuplas con las transiciones y sus probabliidades
+                    for next, probability in transitions:#Recorremos cada elemento de ese conjunto de tuplas
+                        if probability != 0:#Si no hay probabilidad de ir a ese estado
+                            if tState == next:#Si ya hemos recorrido ese estado
+                                previous.add(state)#Añadimos a recorridos
+            predecessors[tState] = previous#Añadimos al array de predecesores el estado que acabamos de recorrer
+        for state in states:#Volvemos a iterar sobre los estados
+            if self.mdp.isTerminal(state) == False:#Si el estado actual no es terminal
+                current = self.values[state]#Extraemos el valor del estado actual
+                qValues = []#Inicilizamos el array de qvalores vacio
+                actions = self.mdp.getPossibleActions(state)#Extraemos las accione sposibles
+                for action in actions:#Recorremos esas acciones
+                    tempValue = self.computeQValueFromValues(state, action)#Calculamos los qvalores para esas acciones
+                    qValues = qValues + [tempValue]#Añadimos los qvalores a la lista
+                maxQvalue = max(qValues)#Extraemos la accion que maximiza ese qvalor
+                diff = current - maxQvalue#Calculamos el valor real restandole el mayor qvalor al valor actual
+                if diff > 0:#Si el valor real es mayor que 0
+                    diff = diff * -1#Lo multiplicamos por -1 para convertirlo a negativo
+                fringe.push(state, diff)#Añadimos el estado actual a la cola de prioridad que es nuestra franja de trabajo
+        for i in range(0, self.iterations):
+            if fringe.isEmpty():#sI NO TENEMOS ESTADOS DONDE TRABAJAR
+                break#Paramos las iteraciones
+            s = fringe.pop()#Extraemos el primero elemento de la cola
+            if not self.mdp.isTerminal(s):#Si no es un estado terminal
+                values = []#Inicializamos lista de valores 
+                for action in self.mdp.getPossibleActions(s):#Recorremos las acciones posibles
+                    value = 0
+                    for next, prob in self.mdp.getTransitionStatesAndProbs(s, action):#Recorremos cada estado siguiente y la probabilidad que este
+                        reward = self.mdp.getReward(s, action, next)
+                        value = value + (prob * (reward + (self.discount * self.values[next])))#Calculamos el valor del estado con la formula
+                    values.append(value)#Añadimos a la lista de valores
+                self.values[s] = max(values)#Nos quedamos con el valor mas grande
+            for previous in predecessors[s]:#Recorremos los estados anteriores al actual
+                current = self.values[previous]#Extraemos los valores de ese estado anterior
+                qValues = []
+                for action in self.mdp.getPossibleActions(previous):#Vemos las acciones del estado anterior
+                    qValues += [self.computeQValueFromValues(previous, action)]#Calculamos los qvalores de el predecesor
+                maxQ = max(qValues)#Nos quedamos con el valor maximo
+                diff = abs((current - maxQ))#Obtenemos la diferencia de lo extraido y lo calculado
+                if (diff > self.theta):
+                    fringe.update(previous, -diff)#Actualizamos la franja de trabajo con el estado anterior dandole como prioridad la diferencia calculada previamente
 
+       
+   
+       
