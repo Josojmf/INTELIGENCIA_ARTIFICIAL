@@ -176,8 +176,8 @@ class AsynchronousValueIterationAgent(ValueIterationAgent):
                 statesAndProbabilities = self.mdp.getTransitionStatesAndProbs(state,action)
                 for nextAction, prob in statesAndProbabilities:
                     reward = self.mdp.getReward(state,action,nextAction)
-                    dicount = self.discount
-                    value = value + prob * (reward + dicount*self.values[nextAction])
+                    discount = self.discount
+                    value = value + prob * (reward + discount*self.values[nextAction])
                 maxValues = maxValues + [value]
                 if value > maxValue:
                     maxValue = value
